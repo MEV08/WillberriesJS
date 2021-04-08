@@ -30,10 +30,14 @@ const getGoods = async () => {
 };
 const cart = {
 	cartGoods: [],
+	getCountCartGoods() {
+		return this.cartGoods.length
+	},
 	countQuantity() {
-		cartCount.textContent = this.cartGoods.reduce((sum, item) => {
+		const count = this.cartGoods.reduce((sum, item) => {
 			return sum + item.count
 		}, 0)
+		cartCount.textContent = count ? count: '';
 	},
 	clearCart() {
 		this.cartGoods.length = 0;
@@ -225,4 +229,53 @@ showClothing.forEach(item => {
 		event.preventDefault();
 		filterCards('category', 'clothing');
 	});
+});
+const modalForm = document.querySelector('.modal-form');
+const postData = dataUser => fetch('server.php', {
+	method: 'POST',
+	body: dataUser,
+});
+const validForm = (formData) => {
+	let valid ;
+	for (const [, value] of formData) {
+		if (value.trim()){
+			valid = true;
+		} else {
+			valid = false;
+			break;
+		}
+
+	}
+	return valid;
+}
+modalForm.addEventListener('submit', event => {
+	event.preventDefault();
+	const formData = new FormData(modalForm);
+
+	if (validForm(formData) && cart.getCountCartGoods()) {
+		formData.append('cart', JSON.stringify(cart.cartGoods))
+	postData(formData)
+		.then(response => {
+			if (!response.ok) {
+				throw new Error(response.status);
+			}
+			alert('Ваш заказ успешно обработан');
+			console.log(response.statusText);
+		})
+		.catch(error => {
+			alert('Произошла ошибка, повторите попытку позже');
+			console.error(error)
+		})
+		.finally(() => {
+			closeModal();
+			modalForm.reset();
+			cart.clearCart();
+		});
+	} else {
+		if(!cart.getCountCartGoods()) {
+			alert('Добавьте товары в корзину');
+		} if (!validForm(formData)) {
+			alert('Заполните поля');
+		}	
+	}
 });
